@@ -26,6 +26,9 @@ def analyze_code_quality(path):
         raise click.Abort()
     
     results = cc_visit(code)
+    keys = ["Name", "Line Number", "Column Offset", "Endline", "isMethod", "Class", "Closures", "Complexity"]
+    data = [[val] for val in results]
+    data = dict(zip(keys, data))
     return results
 
 

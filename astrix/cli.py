@@ -1,6 +1,8 @@
 import click
 import os
+import inspect
 from tabulate import tabulate
+from radon.visitors import Class
 from astrix.features.code_quality import analyze_code_quality
 from astrix.features.code_quality import analyze_maintainability_index
 from astrix.features.callgraph import generate_call_graph
@@ -10,7 +12,7 @@ from astrix.features.conflict_management import installTxt, installSetup, create
 
 @click.group()
 def cli():
-    """Astrix CLI - A tool to analyze and manage code bases."""
+    """Astrix - Your All-in-One Python Project Analyzer"""
     pass
 
 @cli.command()
@@ -18,8 +20,7 @@ def cli():
 @click.option('--path', '-p', type=click.Path(exists=True, file_okay=True, dir_okay=False), help='Path to the Python file')
 def analyze(path):
     """ 
-
-This command analyzes functions in a given Python file and returns details about them, including their name, location, and complexity.
+    This command analyzes functions in a given Python file and returns details about them, including their name, location, and complexity.
 
 
 
@@ -48,16 +49,23 @@ Example: astrix analyze example_file.py
         raise click.Abort()
     
 
-    click.echo(tabulate(results, headers=["Name", "Line Number", "Column Offset", "Endline", "isMethod", "Class", "Closures", "Complexity"], 
+    # name, lineno, col_offset, endline, is_method, classname, closures, complexity
+    data = []
+    for result in results:
+        if not isinstance(result, Class):
+            res = [result.name, result.lineno, result.col_offset, result.endline, result.is_method, result.classname, result.closures, result.complexity]
+            data.append(res)
+    
+    # print(data)
+        
+    click.echo(tabulate(data, headers=["Name", "Line Number", "Column Offset", "Endline", "isMethod", "Class", "Closures", "Complexity"], 
                         missingval="None"))
-
 @cli.command()
 @click.argument('path', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.option('--path', '-p', type=click.Path(exists=True, file_okay=True, dir_okay=False), help='Path to the Python file')
 @click.option('--multi', is_flag=True, help='Include multi-line strings in maintainability index calculation')
 def maintainability(path, multi):
     """
-
 This command analyzes the Halstead metrics, complexity, and code structure for functions in a given Python file and returns detailed information about them.
 
 Output Details:
@@ -83,7 +91,6 @@ Example: $ astrix analyze-metrics sample.py
 @click.argument('path', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 def callgraph(path):
     """
-
 This command analyzes the specified Python file and generates a call graph that visually represents the function call hierarchy within the code. The call graph is saved as an image file in the same directory as the analyzed Python file.
 
 
@@ -106,7 +113,6 @@ This will generate `sample_callgraph.png` in the same directory as `sample.py`, 
 @click.argument('path', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 def deps(path):
     """
-
 Analyze the specified Python file and return a table of dependencies used within the file, including module names, descriptions, documentation links, and GitHub URLs.
 
 Output Details:
@@ -139,8 +145,11 @@ This command will analyze `sample.py` and return a formatted table of dependenci
     table = generate_dependency_info(path)
     headers = ["Module", "Description", "Documentation", "GitHub URL"]
 
+    if len(table) == 0:
+        click.echo("No dependencies found in the given file")
     # print(table)
-    click.echo(tabulate(table, headers=headers, maxcolwidths=[10, 30, 40, 40], tablefmt="grid"))
+    else:
+        click.echo(tabulate(table, headers=headers, maxcolwidths=[10, 30, 40, 40], tablefmt="grid"))
     
     
 
@@ -198,7 +207,7 @@ This command will create a virtual environment without installing any packages, 
         deps = []
 
     directory = os.path.dirname(os.path.abspath(path)) if path else os.getcwd()
-    create_venv(os.path.basename(directory), deps)
+    create_venv(f"virtual-{os.path.basename(directory)}", deps)
 
 @cli.command()
 @click.argument('path', type=click.Path(exists=True, file_okay=False, dir_okay=True))
@@ -218,7 +227,7 @@ $ astrix delete /path/to/project/ \n
 This command will delete the virtual environment located in the `/path/to/project/` directory.
     """
     #directory = os.path.dirname(os.path.abspath(path))
-    delete_venv(os.path.basename(path))
+    delete_venv(f"{os.path.basename(path)}")
 
 
 if __name__ == '__main__':

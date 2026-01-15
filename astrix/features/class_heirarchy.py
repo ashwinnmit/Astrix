@@ -62,5 +62,5 @@ def generate_class_hierarchy(path):
     nx.draw(graph, pos, with_labels=True, node_size=3000, node_color=node_colors, font_size=10, font_weight="bold", arrows=True)
     plt.title("Class Hierarchy")
     plt.savefig(output_path)
-    click.echo("Class hierarchy saved as class_hierarchy.png")
+    click.echo(f"Class hierarchy saved as {output_path}")
 

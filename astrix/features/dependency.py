@@ -2,6 +2,7 @@ import click
 import ast
 import requests
 from stdlib_list import in_stdlib
+from importlib.metadata import packages_distributions
 
 def fetch_module_details(url):
     """
@@ -33,6 +34,14 @@ def processResponse(project_url):
     
     return github_url
 
+def get_pypi_name(module):
+    res = packages_distributions()
+    if module not in res:
+        return module
+    else:
+        return res[module][0]
+
+
 def generate_dependency_info(path):
     """Generate a dependency graph for the specified Python script."""
     try:
@@ -61,12 +70,19 @@ def generate_dependency_info(path):
                         modules[module] = ["Inbuilt module of python", documentation, "https://github.com/python/cpython"]
 
                     else:
+                        module = get_pypi_name(module)
                         url = f"https://pypi.org/pypi/{module}/json"
                         moduleDetails = fetch_module_details(url)
-                        summary = moduleDetails["info"].get("summary", "No summary available :(")
-                        project_urls = moduleDetails["info"].get("project_urls", {})
-                        documentation = project_urls.get("Documentation", "No documentation available :(")
-                        github_url = processResponse(project_urls)
+                        if moduleDetails == {}:
+                            summary = "No summary available :("
+                            project_urls = {}
+                            documentation = "No documentation available :("
+                            github_url = "No github URL :("
+                        else:
+                            summary = moduleDetails["info"].get("summary", "No summary available :(")
+                            project_urls = moduleDetails["info"].get("project_urls", {})
+                            documentation = project_urls.get("Documentation", f"https://pypi.org/pypi/{module}")
+                            github_url = processResponse(project_urls)
                         modules[module] = [summary, documentation, github_url]
                     
 
@@ -76,16 +92,26 @@ def generate_dependency_info(path):
                     documentation = f"https://docs.python.org/3/library/{module}.html"
                     modules[module] = ["Inbuilt module of python", documentation, "https://github.com/python/cpython"]
                 else:
+                    module = get_pypi_name(module)
                     url = f"https://pypi.org/pypi/{module}/json"
                     moduleDetails = fetch_module_details(url)
-                    summary = moduleDetails["info"].get("summary", "No summary available :(")
-                    project_urls = moduleDetails["info"].get("project_urls", {})
-                    documentation = project_urls.get("Documentation", "No documentation available :(")
-                    github_url = processResponse(project_urls)
+                    if moduleDetails == {}:
+                            summary = "No summary available :("
+                            project_urls = {}
+                            documentation = "No documentation available :("
+                            github_url = "No github URL :("
+                    else:
+                        summary = moduleDetails["info"].get("summary", "No summary available :(")
+                        project_urls = moduleDetails["info"].get("project_urls", {})
+                        documentation = project_urls.get("Documentation", f"https://pypi.org/pypi/{module}")
+                        github_url = processResponse(project_urls)
                     modules[module] = [summary, documentation, github_url]
 
     
     table = []
+    if(modules == {}):
+        return table
+    
     for pkg, info in modules.items():
         table.append([pkg, *info])
     

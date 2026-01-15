@@ -68,7 +68,10 @@ def create_venv(env_name, deps):
     else:
         print("No requirement.txt or setup.py file found")
 
+    print(f"Please run '.\\{env_name}\\Scripts\\activate' to activate the virtual environment on Windows")
+    print("Please run 'deactivate' to deactivate the virtual environment on Windows")
 
+    
 def delete_venv(env_name):
     """Delete the virtual environment directory."""
     if os.path.exists(env_name):

@@ -3,6 +3,7 @@ import ast
 import networkx as nx
 import matplotlib.pyplot as plt
 import os
+import builtins
 
 
 def generate_call_graph(path):
@@ -31,18 +32,24 @@ def generate_call_graph(path):
         raise click.Abort()
     graph = nx.DiGraph()
 
+    builtin_functions = dir(builtins)
+    builtin_functions = [func for func in builtin_functions if callable(getattr(builtins, func))]
+
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
             function_name = node.name
-            graph.add_node(function_name)
-            for child in ast.walk(node):
-                if isinstance(child, ast.Call):
-                    if isinstance(child.func, ast.Name):
-                        called_function = child.func.id
-                        graph.add_edge(function_name, called_function)
+            if function_name not in builtin_functions:
+                graph.add_node(function_name)
+                for child in ast.walk(node):
+                    if isinstance(child, ast.Call):
+                        if isinstance(child.func, ast.Name):
+                            called_function = child.func.id
+                            if called_function not in builtin_functions:
+                                graph.add_edge(function_name, called_function)
 
-    pos = nx.spring_layout(graph)
-    nx.draw(graph, pos, with_labels=True, node_size=2000, node_color="lightblue", font_size=10, font_weight="bold", arrows=True)
+    plt.figure(figsize=(30, 21))
+    pos = nx.shell_layout(graph, scale=7)
+    nx.draw(graph, pos, with_labels=True, node_size=3000, node_color="lightblue", font_size=20, font_weight="bold", arrows=True)
     plt.title("Call Graph")
     plt.savefig(output_path)
     click.echo(f"Call graph saved as {output_path}")
